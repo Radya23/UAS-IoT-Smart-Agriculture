@@ -1,4 +1,5 @@
-JUDUL PROYEK
+**JUDUL PROYEK**
+
 Implementasi Smart Agriculture: Sistem Penyiraman Otomatis Berbasis ESP32 dengan Integrasi Keamanan Data dan Monitoring Realtime
 
 PENJELASAN PROYEK

@@ -1,14 +1,14 @@
-import 'dart:convert';
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() => runApp(MaterialApp(
-  debugShowCheckedModeBanner: false, 
-  home: SmartAgricultureApp(),
-  theme: ThemeData.dark(), // Menggunakan dark theme agar lebih modern
-));
+      debugShowCheckedModeBanner: false,
+      home: SmartAgricultureApp(),
+      theme: ThemeData.dark().copyWith(
+        textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+      ),
+    ));
 
 class SmartAgricultureApp extends StatefulWidget {
   @override
@@ -16,58 +16,94 @@ class SmartAgricultureApp extends StatefulWidget {
 }
 
 class _SmartAgricultureAppState extends State<SmartAgricultureApp> {
-  double kelembapan = 0.0;
-  final String apiUrl = "http://IP_SERVER_LARAVEL/api/latest";
-
-  // Fungsi fetch data (sama seperti sebelumnya)
-  Future<void> fetchData() async {
-    try {
-      final response = await http.get(Uri.parse(apiUrl));
-      if (response.statusCode == 200) {
-        var data = jsonDecode(utf8.decode(base64Decode(jsonDecode(response.body)['data'])));
-        setState(() => kelembapan = (data['kelembapan'] as num).toDouble());
-      }
-    } catch (e) { debugPrint("Error: $e"); }
-  }
+  double currentDisplayPercent = 0.0;
+  double targetKelembapan = 85.0;
+  
+  // List untuk menyimpan histori waktu
+  List<String> history = [];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade900, Colors.teal.shade700],
-            begin: Alignment.topLeft, end: Alignment.bottomRight,
-          ),
-        ),
+      backgroundColor: Color(0xFF0F2027),
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("Smart Agri Monitor", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-            SizedBox(height: 40),
-            CircularPercentIndicator(
-              radius: 130.0,
-              lineWidth: 20.0,
-              animation: true,
-              percent: kelembapan / 100,
-              center: Column(
+            SizedBox(height: 20),
+            Text("SMART AGRI CONTROL", style: TextStyle(fontSize: 24, letterSpacing: 3, fontWeight: FontWeight.w900)),
+            
+            Expanded(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(kelembapan < 40 ? Icons.water_drop : Icons.grass, size: 50, color: Colors.white),
-                  Text("${kelembapan.toInt()}%", style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
+                  TweenAnimationBuilder<double>(
+                    key: ValueKey(currentDisplayPercent),
+                    tween: Tween<double>(begin: 0, end: currentDisplayPercent),
+                    duration: Duration(seconds: 3),
+                    curve: Curves.elasticOut,
+                    builder: (context, value, child) {
+                      return CircularPercentIndicator(
+                        radius: 100.0,
+                        lineWidth: 15.0,
+                        percent: value / 100,
+                        center: Text("${value.toInt()}%", style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
+                        progressColor: Colors.cyanAccent,
+                        backgroundColor: Colors.white10,
+                        circularStrokeCap: CircularStrokeCap.round,
+                      );
+                    },
+                  ),
+                  SizedBox(height: 40),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildButton("START", Icons.play_circle_fill, Colors.cyan, () {
+                        setState(() {
+                          currentDisplayPercent = targetKelembapan;
+                          // Menambahkan waktu saat ini ke dalam list
+                          String time = TimeOfDay.now().format(context);
+                          history.insert(0, "Penyiraman: $time"); 
+                        });
+                      }),
+                      SizedBox(width: 20),
+                      _buildButton("STOP", Icons.stop_circle, Colors.pinkAccent, () {
+                        setState(() {
+                          currentDisplayPercent = 0.0;
+                        });
+                      }),
+                    ],
+                  ),
                 ],
               ),
-              progressColor: kelembapan < 40 ? Colors.redAccent : Colors.lightGreenAccent,
-              backgroundColor: Colors.white24,
             ),
-            SizedBox(height: 50),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildActionButton("Siram", Icons.play_arrow, Colors.blue),
-                SizedBox(width: 30),
-                _buildActionButton("Stop", Icons.stop, Colors.red),
-              ],
+
+            // Widget Histori
+            Container(
+              height: 150,
+              padding: EdgeInsets.all(15),
+              margin: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Histori Terakhir:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.cyanAccent)),
+                  Divider(color: Colors.white24),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: history.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text("• ${history[index]}", style: TextStyle(color: Colors.white70)),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -75,11 +111,20 @@ class _SmartAgricultureAppState extends State<SmartAgricultureApp> {
     );
   }
 
-  Widget _buildActionButton(String label, IconData icon, Color color) {
-    return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(backgroundColor: color, padding: EdgeInsets.symmetric(horizontal: 25, vertical: 15)),
-      onPressed: () {}, // Tambahkan logika API post disini
-      icon: Icon(icon), label: Text(label),
+  Widget _buildButton(String label, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.2),
+          border: Border.all(color: color),
+          borderRadius: BorderRadius.circular(50),
+        ),
+        child: Row(
+          children: [Icon(icon, color: color), SizedBox(width: 8), Text(label)],
+        ),
+      ),
     );
   }
 }

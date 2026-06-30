@@ -6,25 +6,25 @@ Implementasi Smart Agriculture: Sistem Penyiraman Otomatis Berbasis ESP32 dengan
 
 **PENJELASAN PROYEK**
 ----------------------------------------------------------------------------------------------------------------------------------------
-Sistem ini dirancang untuk melakukan penyiraman tanaman secara otomatis berdasarkan data kelembapan tanah yang dibaca oleh sensor secara realtime. ESP32 berfungsi sebagai pusat pemrosesan utama yang mengolah parameter sensor dan mengontrol aktuator pompa air secara mandiri. Pengguna dapat memantau tingkat kelembapan tanah dan status aktif/tidaknya pompa melalui aplikasi mobile. Komunikasi data dari perangkat ke server menggunakan protokol HTTP yang dilengkapi dengan lapisan enkripsi untuk menjamin keamanan data selama pengiriman. Sistem ini dirancang untuk mengoptimalkan penggunaan air secara efisien dengan memastikan tanaman hanya disiram saat kondisi tanah membutuhkan air.
+PENJELASAN PROYEK
+Sistem ini adalah solusi cerdas untuk manajemen penyiraman tanaman secara autonomous (mandiri). Sistem membaca data kelembapan tanah melalui sensor secara real-time dan menggunakan mikrokontroler ESP32 sebagai pusat pemrosesan logika untuk mengontrol aktuator pompa air tanpa perlu intervensi manusia. Data kelembapan dan status aktivitas pompa dikirimkan secara berkala ke server backend untuk pemantauan dan pencatatan histori otomatis di dasbor web. Sistem ini bertujuan mengoptimalkan efisiensi air dengan menyiram tanaman hanya saat kondisi tanah berada di bawah ambang batas (kering).
 
 **CARA KERJA**
 ----------------------------------------------------------------------------------------------------------------------------------------
-1. ESP32 menginisialisasi koneksi ke jaringan WiFi yang tersedia.
-2. ESP32 memproses data biner/analog dari sensor; jika tingkat kelembapan berada di bawah ambang batas (threshold tanah kering), ESP32 akan mengirim sinyal ke pin output untuk mengaktifkan modul relai yang menggerakkan Pompa Air Mini 5V.
-3. Sebelum dikirim ke server, data hasil pembacaan kelembapan tanah dan status pompa dienkripsi terlebih dahulu di sisi ESP32 demi menjaga integritas data.
-4. Server backend menerima data enkripsi tersebut, melakukan proses dekripsi, dan menyimpan datanya ke dalam basis data MySQL.
-5. Aplikasi mobile melakukan request data ke server melalui RESTful API untuk menampilkan kondisi lahan secara realtime.
-6. Melalui aplikasi mobile, pengguna juga dapat mengirimkan perintah kontrol manual untuk menyalakan atau mematikan pompa air dari jarak jauh.
+1. nilai analog dari sensor kelembapan tanah yang kemudian dikonversi menjadi persentase kelembapan (0% - 100%).
+2. Autonomous Logic: ESP32 menerapkan logika ambang batas (thresholding). Jika kelembapan di bawah 40% (kering), pompa diaktifkan secara otomatis. Jika kelembapan berada di atas 40% (normal hingga basah), pompa dihentikan.
+3. Data Logging: ESP32 mengirimkan data kelembapan dan status pompa ke server Laravel melalui RESTful API (POST request) setiap 3 detik.
+4. Data Visualization: Dasbor web melakukan fetch data secara real-time dari database untuk menampilkan persentase kelembapan dalam bentuk progress bar yang dinamis serta tabel histori aktivitas penyiraman.
    
 **KOMPONEN PROYEK**
 ----------------------------------------------------------------------------------------------------------------------------------------
 PERANGKAT KERAS:
 1. ESP32 Development Board
-2. Modul Relay
-3. Kabel Jumper
-4. Baterai
-5. Pompa Air Mini 5V (termasuk modul relai sebagai penggerak pompa)
+2. Sensor Kelembapan Tanah (Resistif)
+3. Modul Relay 1-Channel
+4. Kabel Jumper
+5. Baterai/Power Supply
+6. Pompa Air Mini 5V
 
 PERANGKAT LUNAK:
 1. Firmware: Arduino IDE (C++)
